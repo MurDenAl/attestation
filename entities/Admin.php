@@ -1,6 +1,6 @@
 <?php
 
-class User {
+class Admin {
     public PDO $connection;
 
 // Подключение к базе данных:
@@ -11,16 +11,6 @@ class User {
         } catch (PDOException $exception) {
             echo json_encode($exception->getMessage());
         }
-    }
-
-// Добавление пользователя
-    public static function create($obj)
-    {
-        $statement = $obj->connection->prepare("INSERT INTO user(id, email, password, role) values(null, :email, :password, :role)");
-        $statement->bindValue('email', $_POST['email']);
-        $statement->bindValue('password', $_POST['password']);
-        $statement->bindValue('role', $_POST['role']);
-        $statement->execute();
     }
 
 // Получение списка пользователей
@@ -73,37 +63,5 @@ class User {
         $statement = $obj->connection->prepare('DELETE FROM user WHERE id = :id');
         $statement->bindValue('id', $id);
         $statement->execute();
-    }
-
-// Авторизация пользователя
-    public static function login($obj) {
-        $statement = $obj->connection->prepare('SELECT * FROM user WHERE email = :email AND password = :password');
-        $statement->bindValue('email', $_POST['email']);
-        $statement->bindValue('password', $_POST['password']);
-        $statement->execute();
-        if ($statement->rowCount() > 0) {
-            session_start();
-            $_SESSION['id'] = session_id();
-            echo 'Вы успешно авторизированы!';
-        } else {
-            echo 'Неверный логин или пароль!';
-            http_response_code(401);
-        }
-    }
-
-// Выход из учетной записи
-    public static function logout($obj) {
-        session_start();
-        unset($_SESSION['id']);
-    }
-
-// Сброс пароля
-    public static function reset_password($obj) {
-        include_once('MailException.php');
-        try {
-            echo MailException::checkMail();
-        } catch (MailException $exception) {
-            echo $exception->getMessage();
-        }
     }
 }
