@@ -76,7 +76,8 @@ class User {
     }
 
 // Авторизация пользователя
-    public static function login($obj) {
+    public static function login($obj)
+    {
         $statement = $obj->connection->prepare('SELECT * FROM user WHERE email = :email AND password = :password');
         $statement->bindValue('email', $_POST['email']);
         $statement->bindValue('password', $_POST['password']);
@@ -84,6 +85,7 @@ class User {
         if ($statement->rowCount() > 0) {
             session_start();
             $_SESSION['id'] = session_id();
+            $_SESSION['role'] = $statement->fetchColumn(3);
             echo 'Вы успешно авторизированы!';
         } else {
             echo 'Неверный логин или пароль!';
@@ -92,13 +94,16 @@ class User {
     }
 
 // Выход из учетной записи
-    public static function logout($obj) {
+    public static function logout($obj)
+    {
         session_start();
         unset($_SESSION['id']);
+        unset($_SESSION['role']);
     }
 
 // Сброс пароля
-    public static function reset_password($obj) {
+    public static function reset_password($obj)
+    {
         include_once('MailException.php');
         try {
             echo MailException::checkMail();
