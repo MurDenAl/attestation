@@ -18,7 +18,6 @@ class Admin {
 // Проверка пользователя на права администратора
     private function checkRole()
     {
-        session_start();
         if (isset($_SESSION['role'])) {
             if ($this->role == $_SESSION['role']) {
                 return true;

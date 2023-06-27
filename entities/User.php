@@ -2,6 +2,7 @@
 
 class User {
     public PDO $connection;
+    private $role;
 
 // Подключение к базе данных:
     public function __construct()
@@ -11,6 +12,7 @@ class User {
         } catch (PDOException $exception) {
             echo json_encode($exception->getMessage());
         }
+        $this->role = 'user';
     }
 
 // Добавление пользователя
@@ -23,29 +25,55 @@ class User {
         $statement->execute();
     }
 
+// Проверка пользователя на права администратора
+private function checkRole()
+{
+    if (isset($_SESSION['role'])) {
+        if ($this->role !== $_SESSION['role']) {
+            return true;
+        } else {
+            return false;
+        }
+    } else {
+        echo 'Вход в аккаунт не выполнен!';
+        die(http_response_code(401));
+    }
+}
+
 // Получение списка пользователей
-    public static function list($obj)
-    {
+public static function list($obj)
+{
+    if ($obj->checkRole() === true) {
         $statement = $obj->connection->query('SELECT * FROM user');
         $statement->execute();
         while ($data = $statement->fetchColumn(1)) {
-            echo $data . PHP_EOL;
+        echo $data . PHP_EOL;
         }
+    } else {
+        echo 'Нет прав для выполнения данного действия!';
+        http_response_code(403);
     }
+}
 
 // Получение JSON конкретного пользователя
-    public static function read($obj, $id)
-    {
+public static function read($obj, $id)
+{
+    if ($obj->checkRole() === true) {
         $statement = $obj->connection->prepare('SELECT * FROM user WHERE id = :id');
         $statement->bindValue('id', $id);
         $statement->execute();
         $data = $statement->fetchAll();
         echo json_encode($data);
+    } else {
+        echo 'Нет прав для выполнения данного действия!';
+        http_response_code(403);
     }
+}
 
 // Обновление данных пользователя
-    public static function update($obj, $id)
-    {
+public static function update($obj, $id)
+{
+    if ($obj->checkRole() === true) {
         parse_str(file_get_contents("php://input"), $PUT);
         if (isset($PUT['email'])) {
             $statement = $obj->connection->prepare("UPDATE user SET email = :email WHERE id = :id");
@@ -65,15 +93,24 @@ class User {
             $statement->bindValue('role', $PUT['role']);
             $statement->execute();
         }
+    } else {
+        echo 'Нет прав для выполнения данного действия!';
+        http_response_code(403);
     }
+}
 
 // Удаление пользователя
-    public static function delete($obj, $id)
-    {
+public static function delete($obj, $id)
+{
+    if ($obj->checkRole() === true) {
         $statement = $obj->connection->prepare('DELETE FROM user WHERE id = :id');
         $statement->bindValue('id', $id);
         $statement->execute();
+    } else {
+        echo 'Нет прав для выполнения данного действия!';
+        http_response_code(403);
     }
+}
 
 // Авторизация пользователя
     public static function login($obj)
@@ -83,9 +120,9 @@ class User {
         $statement->bindValue('password', $_POST['password']);
         $statement->execute();
         if ($statement->rowCount() > 0) {
-            session_start();
-            $_SESSION['id'] = session_id();
-            $_SESSION['role'] = $statement->fetchColumn(3);
+            $userData = $statement->fetchAll();
+            $_SESSION['id'] = $userData[0][0];
+            $_SESSION['role'] = $userData[0][3];
             echo 'Вы успешно авторизированы!';
         } else {
             echo 'Неверный логин или пароль!';
@@ -96,7 +133,6 @@ class User {
 // Выход из учетной записи
     public static function logout($obj)
     {
-        session_start();
         unset($_SESSION['id']);
         unset($_SESSION['role']);
     }

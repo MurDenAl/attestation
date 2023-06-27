@@ -1,12 +1,16 @@
 <?php
 
+session_start();
+
 include_once('autoload.php');
 
 $id = isset($_GET['id']) ? $_GET['id'] : '$id';
 $user_id = isset($_GET['user_id']) ? $_GET['user_id'] : '$user_id';
 $user = new User();
-$admin = new Admin();
-$file = new File();
+
+// Проверка авторизации пользователя
+$admin = isset($_SESSION['id']) ? new Admin() : '$admin';
+$file = isset($_SESSION['id']) ? new File() : '$file';
 
 // Эндпоинты:
 $urlList = [
@@ -36,12 +40,20 @@ foreach (array_keys($urlList) as $key) {
                 $obj = array_pop($funcData);
                 $func = array_pop($funcData);
                 if (count($funcData) == 2) {
+                    if (!isset($_SESSION['id'])) {
+                        echo 'Вход в аккаунт не выполнен!';
+                        die(http_response_code(401));
+                    }
                     call_user_func($func, $obj, $id, $user_id);
                 }
                 elseif (count($funcData) == 1) {
+                    if (!isset($_SESSION['id'])) {
+                        echo 'Вход в аккаунт не выполнен!';
+                        die(http_response_code(401));
+                    }
                     call_user_func($func, $obj, $id);
                 } else {
-                    call_user_func($func, $obj);
+                call_user_func($func, $obj);
                 }
             }
         }
